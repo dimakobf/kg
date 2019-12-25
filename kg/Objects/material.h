@@ -1,5 +1,7 @@
 #pragma once
 #include "../geometry.h"
+#include "../image.h"
+#include <vector>
 
 typedef Vec4f Albedo;
 typedef Vec3f Color3;
@@ -12,6 +14,8 @@ Color3 VenusC(238.0 / 255, 232.0 / 255, 170.0 / 255);
 
 Albedo EarthA(0.43, 0.3, 0.1, 0);
 Color3 EarthC(0.0, 0.0, 1.0);
+Albedo MoonA(0.43, 0.3, 0.1, 0);
+Color3 MoonC(192.0 / 255, 192.0 / 255, 192.0 / 255);
 
 Albedo MarsA(0.17, 0.3, 0.1, 0);
 Color3 MarsC(89.0 / 255, 0.0, 0.0);
@@ -31,4 +35,5 @@ struct Material {
     Vec4f albedo;
     Vec3f diffuse_color;
     float specular_exponent;
+    bool light_source = false;
 };

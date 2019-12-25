@@ -29,6 +29,7 @@ Vec3f refract(const Vec3f& I, const Vec3f& N, const float eta_t, const float eta
 }
 
 bool scene_intersect(const Vec3f& orig, const Vec3f& dir, const std::vector<Sphere>& spheres, Vec3f& hit, Vec3f& N, Material& material) {
+
     float spheres_dist = std::numeric_limits<float>::max();
     for (size_t i = 0; i < spheres.size(); i++) {
         float dist_i;
@@ -37,6 +38,7 @@ bool scene_intersect(const Vec3f& orig, const Vec3f& dir, const std::vector<Sphe
             hit = orig + dir * dist_i;
             N = (hit - spheres[i].center).normalize();
             material = spheres[i].material;
+            material.diffuse_color = spheres[i].get_color(N);
         }
     }
 
@@ -47,7 +49,7 @@ Vec3f cast_ray(const Vec3f& orig, const Vec3f& dir, const std::vector<Sphere>& s
     Vec3f point, N;
     Material material;
 
-    if (depth > 4 || !scene_intersect(orig, dir, spheres, point, N, material)) {
+    if (depth > 2 || !scene_intersect(orig, dir, spheres, point, N, material)) {
         return space; // background color
     }
 
@@ -66,98 +68,12 @@ Vec3f cast_ray(const Vec3f& orig, const Vec3f& dir, const std::vector<Sphere>& s
         Vec3f shadow_orig = light_dir * N < 0 ? point - N * 1e-3 : point + N * 1e-3; // checking if the point lies in the shadow of the lights[i]
         Vec3f shadow_pt, shadow_N;
         Material tmpmaterial;
-        if (scene_intersect(shadow_orig, light_dir, spheres, shadow_pt, shadow_N, tmpmaterial) && (shadow_pt - shadow_orig).norm() < light_distance)
+        if (scene_intersect(shadow_orig, light_dir, spheres, shadow_pt, shadow_N, tmpmaterial) && (shadow_pt - shadow_orig).norm() < light_distance && !tmpmaterial.light_source)
             continue;
 
         diffuse_light_intensity += lights[i].intensity * std::max(0.f, light_dir * N);
         specular_light_intensity += powf(std::max(0.f, -reflect(-light_dir, N) * dir), material.specular_exponent) * lights[i].intensity;
     }
+    if (material.light_source) diffuse_light_intensity = 1;
     return material.diffuse_color * diffuse_light_intensity * material.albedo[0] + Vec3f(1., 1., 1.) * specular_light_intensity * material.albedo[1] + reflect_color * material.albedo[2] + refract_color * material.albedo[3];
-}
-
-void rotation(float &y, float &z, float angle)
-{
-    y =  y*cos(angle)+z*sin(angle) ;
-    z = -y*sin(angle)+z*cos(angle) ;
-}
-
-Vec3f rotation(const Vec3f& source)
-{
-    Vec3f coords = source;
-    rotation(coords.y, coords.z, ax);
-    rotation(coords.x, coords.z, ay);
-    rotation(coords.x, coords.y, az);
-
-    return coords;
-}
-
-void thread_for(const std::vector<Sphere>& spheres, const std::vector<Light>& lights, std::vector<Vec3f>& framebuffer, 
-    int height, int width, int a, int b)
-{
-
-    for (size_t j = a; j < b; j++) { // actual rendering loop
-        for (size_t i = 0; i < width; i++) {
-            float dir_x = (i + 0.5) - width / 2.;
-            float dir_y = (j + 0.5) - height / 2.;
-            float dir_z = -height / (2. * tan(fov / 2.));
-            framebuffer[i + j * width] = cast_ray(camera, rotation(Vec3f(dir_x, dir_y, dir_z)).normalize(), spheres, lights);
-        }
-    }
-}
-
-std::vector<Vec3f> sphere_render(const std::vector<Sphere>& spheres, const std::vector<Light>& lights) {
-    const int   width = 1000;
-    const int   height = 1000;
-    const float fov = M_PI / 3.;
-    std::vector<Vec3f> framebuffer(width * height);
-
-    int tcount = 10;
-    int a = 0;
-    int b = height / tcount;
-
-    boost::thread_group threads;
-    for (int i = 0; i < tcount; ++i) {
-        threads.create_thread(boost::bind(&thread_for, boost::cref(spheres), boost::cref(lights), boost::ref(framebuffer), height, width, a, b));
-        a = b;
-        b = height / tcount + b;
-    }
-    threads.join_all();
-
-    return framebuffer;
-}
-
-std::vector<Vec3f> dorender() {
-    Material      ivory(1.0, Vec4f(0.6, 0.3, 0.1, 0.0), Vec3f(0.4, 0.4, 0.3), 50.);
-    Material      glass(1.5, Vec4f(0.0, 0.5, 0.1, 0.8), Vec3f(0.6, 0.7, 0.8), 125.);
-    Material red_rubber(1.0, Vec4f(0.9, 0.1, 0.0, 0.0), Vec3f(0.3, 0.1, 0.1), 10.);
-    Material     mirror(1.0, Vec4f(0.0, 10.0, 0.8, 0.0), Vec3f(1.0, 1.0, 1.0), 1425.);
-
-    //Material     sun(0.0, Vec4f(0.0, 0.0, 0.0, 0.0), Vec3f(1.0, 1.0, 0.0), 0.);
-    Material sun(1.5, Vec4f(0.3, 1.5, 0.2, 0.5), Vec3f(1.0, 1.0, 0.0), 125.);
-
-
-    std::vector<Sphere> spheres;
-    for (auto planet : planets)
-    {
-        spheres.push_back(Sphere(planet.current_place(), planet.radius, planet.material));
-    }
-    //spheres.push_back(Sphere(Vec3f(-3, -1, -16), 2, ivory));
-    //spheres.push_back(Sphere(Vec3f(0, 0, 0), 2, glass));
-    //spheres.push_back(Sphere(Vec3f(1.5, -0.5, -18), 3, red_rubber));
-    //spheres.push_back(Sphere(Vec3f(7, 5, -18), 4, mirror));
-
-    /*spheres.push_back(Sphere(Vec3f(-7, -7, -30), 1, mercury));
-    spheres.push_back(Sphere(Vec3f(-5, -5, -40), 2, venus));
-    spheres.push_back(Sphere(Vec3f(0, 20, -50), 4, earth));
-    spheres.push_back(Sphere(Vec3f(15, -1, -50), 3, mars));*/
-
-    spheres.push_back(Sphere(Vec3f(0, 0, -120), 2, sun));
-
-    std::vector<Light>  lights;
-    lights.push_back(Light(Vec3f(0, 0, -100), 1.9));
-    //lights.push_back(Light(Vec3f(30, 50, -25), 1.8));
-    lights.push_back(Light(Vec3f(30, 20, 30), 0.1));
-
-    return sphere_render(spheres, lights);
-
 }

@@ -26,19 +26,7 @@
     <ClInclude Include="display.h">
       <Filter>Header files</Filter>
     </ClInclude>
-    <ClInclude Include="Objects\pixel.h">
-      <Filter>Objects</Filter>
-    </ClInclude>
-    <ClInclude Include="color.h">
-      <Filter>Header files</Filter>
-    </ClInclude>
-    <ClInclude Include="coords.h">
-      <Filter>Header files</Filter>
-    </ClInclude>
     <ClInclude Include="scene.h">
-      <Filter>Header files</Filter>
-    </ClInclude>
-    <ClInclude Include="draw.h">
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="geometry.h">
@@ -57,6 +45,9 @@
       <Filter>Objects</Filter>
     </ClInclude>
     <ClInclude Include="Objects\planet.h">
+      <Filter>Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="image.h">
       <Filter>Objects</Filter>
     </ClInclude>
   </ItemGroup>
