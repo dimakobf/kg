@@ -35,28 +35,27 @@ void thread_for(const std::vector<Sphere>& spheres, const std::vector<Light>& li
     }
 }
 
-std::vector<Vec3f> sphere_render(const std::vector<Sphere>& spheres, const std::vector<Light>& lights) {
+void sphere_render(const std::vector<Sphere>& spheres, const std::vector<Light>& lights, std::vector<Vec3f>& framebuffer) {
     const int   width = 1000;
     const int   height = 1000;
     const float fov = M_PI / 3.;
-    std::vector<Vec3f> framebuffer(width * height);
 
-    int tcount = 10;
+    int tcount = 4;
     int a = 0;
     int b = height / tcount;
 
     boost::thread_group threads;
     for (int i = 0; i < tcount; ++i) {
-        threads.create_thread(boost::bind(&thread_for, boost::cref(spheres), boost::cref(lights), boost::ref(framebuffer), height, width, a, b));
+        threads.create_thread(boost::bind(&thread_for, boost::cref(spheres), 
+            boost::cref(lights), boost::ref(framebuffer), height, width, a, b));
         a = b;
         b = height / tcount + b;
     }
     threads.join_all();
 
-    return framebuffer;
 }
 
-std::vector<Vec3f> dorender() {
+void dorender(std::vector<Vec3f>& framebuffer) {
 
     std::vector<Sphere> spheres;
     for (auto &planet : planets)
@@ -72,6 +71,6 @@ std::vector<Vec3f> dorender() {
     std::vector<Light>  lights;
     lights.push_back(Light(Vec3f(0, 0, -100), 3.0));
 
-    return sphere_render(spheres, lights);
+    sphere_render(spheres, lights, framebuffer);
 
 }

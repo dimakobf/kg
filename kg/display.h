@@ -15,6 +15,9 @@
 using namespace std;
 std::vector<Vec3f> buffer;
 int speed = 1;
+int frame = 0, time1, timebase = 0;
+const int width = 1000;
+const int height = 1000;
 
 Material     mercury(1.0, MercuryA, MercuryC, 10.);
 Material     venus(1.0, VenusA, VenusC, 10.);
@@ -93,18 +96,11 @@ void renderScene(void)
 {
 	timer(10);
 
-	buffer = dorender();
+	dorender(buffer);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glBegin(GL_POINTS);
-
-	/*for (auto dot : scene.getDots()) {
-		//сюда в 2д походу
-		//либо сразу 2д готовть
-		glColor3d(dot.color.r, dot.color.g, dot.color.b);
-		glVertex2d(dot.x, dot.y);
-	}*/
 
 	for (size_t j = 0; j < 1000; j++) {
 		for (size_t i = 0; i < 1000; i++) {
@@ -113,15 +109,18 @@ void renderScene(void)
 			glColor3d(c.x, c.y, c.z);
 			glVertex2d(i, j);
 
-			/*float max = std::max(c[0], std::max(c[1], c[2]));
-			if (max > 1) c = c * (1. / max);
-			for (size_t j = 0; j < 3; j++) {
-				ofs << (char)(255 * std::max(0.f, std::min(1.f, framebuffer[i][j])));
-			}*/
 		}
 	}
 
 	glEnd();
+
+	frame++;
+	time1 = glutGet(GLUT_ELAPSED_TIME);
+	if (time1 - timebase > 1000) {
+		std::cout << "FPS: " << (frame * 1000.0 / (time1 - timebase)) << std::endl;
+		timebase = time1;
+		frame = 0;
+	}
 
 	glutSwapBuffers();
 	glutReshapeWindow(1000, 1000);
@@ -195,6 +194,19 @@ void keyboard(unsigned char key, int xmouse, int ymouse)
 	}
 	break;
 
+	case '=':
+	{
+		camera.z += speed * speed;
+	}
+	break;
+
+	case '-':
+	{
+		camera.z -= speed * speed;
+	}
+	break;
+
+
 	default:
 		break;
 	}
@@ -258,6 +270,7 @@ class Display
 public:
 	void init(int argc, char** argv) 
 	{
+		buffer.resize(1000 * 1000);
 		initPlanets();
 
 		glutInit(&argc, argv);
@@ -266,11 +279,6 @@ public:
 		glutInitWindowPosition(10, 10);
 		glutInitWindowSize(1000, 1000);
 		glutCreateWindow(name);
-		//glMatrixMode(GL_PROJECTION);
-		//glClearColor(0.0, 0.0, 0.0, 0.0);
-		//gluOrtho2D(0.0, 350.0, 0.0, 350.0);
-		//glutReshapeFunc(reshape);
-		//glutKeyboardFunc(keyboard);
 
 		glutDisplayFunc(renderScene);
 		glutKeyboardFunc(keyboard);

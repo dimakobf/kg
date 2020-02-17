@@ -4,9 +4,6 @@
 
 class Planet
 {
-	//Vec3f center; на случай, если решу не 0;0;0
-	//Vec3f point;
-	//float speed1, speed2;
 	float rx, ry;
 	float coef = 0.175;
 	float st;
